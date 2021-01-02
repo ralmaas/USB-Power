@@ -11,3 +11,6 @@ The core components in the design:
 - ADS1115 ADC-module
 - ACS758 Hall-based current monitor
 - SSD1306; 128x32 OLED
+
+More information
+https://github.com/ralmaas/USB-Power/wiki/USB01-PowerSupply
