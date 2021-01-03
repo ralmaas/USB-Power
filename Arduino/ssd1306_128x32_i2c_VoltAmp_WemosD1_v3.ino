@@ -6,7 +6,11 @@
 
  Copyrights are located inside each of the .h files
  Major contributor is of cause AdaFruit !
-2021-01-02/ralm Production version
+2021-01-02/ralm V2 Production version
+	Modified MQTT callback function
+2021-01-03/ralm V3 Production version
+	Added display of code version
+
  =========================================================
  Used the code as a template for my Voltage Source Project
   Mena Well 5V/10A power supply
@@ -20,9 +24,9 @@
     Display will turn off after a couple of minutes
     A short press will reactivate display
     A long press will change display mode
-  Assembly Box (140x110x35)
+  Assembly Box (140x110x35) From Kjell&Co
 
- Note: Code is still containg a lot of debug stuff - primarily Print-statements
+ Note: Code may still containg some debug stuff - primarily Print-statements
  **************************************************************************/
 
 #include <SPI.h>
@@ -34,7 +38,7 @@
 #include <PubSubClient.h>
 
 #include "splash.h"
-
+#define VERSION "Ver 3.0"
 // Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
 #define OLED_RESET    -1 // Reset pin # (or -1 if sharing Arduino reset pin)
 #define ARRAY 100     // x-points - adjust to graph/text
@@ -170,14 +174,10 @@ void plot_values(float range)
 {
   int i, res;
 
-  // Serial.println(range);
-  // return;
-  
   display.clearDisplay();
   for (i = 0; i < (ARRAY-30); i++)
   {
     res = int((values[i]/range) * 32);
-    // Serial.print(i); Serial.print(" = "); Serial.println(res);
     if (res > 31) 
     {
       for (int j=0; j < 31; j++)
@@ -209,7 +209,6 @@ void displayNewMode(int m)
   display.setTextColor(WHITE); // Draw white text
   display.print("Mode:" ); display.print(m);  
   display.display();
-  Serial.print("Mode set to "); Serial.println(m);
   delay(500);
 }
 void displayText(int x, int y, int text_size, String text)
@@ -234,8 +233,9 @@ void calibrateAmp()
     delay(10);
   }
   ADC_AMP_OFFSET = 0 - res / 100;
-  Serial.print("Offset on Amp calibrated to: ");
-  Serial.println(ADC_AMP_OFFSET);
+  char buffer[10];
+  sprintf(buffer, "Offs: %d", ADC_AMP_OFFSET);
+  displayText(0, 10, 2, buffer);
 }
 
 //====================================================
@@ -262,8 +262,10 @@ void setup() {
   // Clear the buffer
   display.clearDisplay();
   drawMyBitmap();
+  displayText(0, 10, 2, VERSION);
+  delay(100);
   calibrateAmp();
-  delay(5000);
+  delay(500);
   // Ready for WiFi/MQTT
   setup_wifi();
   client.setServer(mqtt_server, 1883);
@@ -294,10 +296,7 @@ void loop() {
   // Get voltage
   diff1 = ads.readADC_Differential_2_3();
   V = diff1 * ADC_RESOLUTION/ADC_VOLT_REF;    // May need some tuning
-  Serial.print("Countdown: "); Serial.println(t1);
-  Serial.print("diff1 readout: ");
-  Serial.println(diff1);
-  Serial.print("Voltage: "); Serial.println(V);
+
   // Publish every x seconds
   if (t1%10 == 0)
   {
@@ -308,20 +307,18 @@ void loop() {
   // Get Amp
   diff0 = 0-ads.readADC_Differential_0_1();
   diff000[9] = diff0;
-  Serial.print("diff0 readout: ");
-  Serial.println(diff0);
+
   float avg = float(diff0 - ADC_AMP_OFFSET)/1.457;
   if (t1%10 == 0)
   {
     sprintf(buffer, "%5.0f", avg);
     client.publish("PSU01/amp", buffer);
   }
-  Serial.print(" mA: "); Serial.println(avg);
+
   int total = 0;
   for (int i=0; i < 10; i++)
     total += diff000[i];
     
-  Serial.print("Readout average_______________: "); Serial.println(total/10);
   if (avg < 0)
     avg = 0;
 
@@ -354,11 +351,7 @@ void loop() {
       displayBig(disp_mode);
     }
   }
-  /*
-  Serial.print(avg,1);
-  Serial.print(" ");
-  Serial.println(V, 2);
-  */
+
   // Handle button
   if (digitalRead(BUTTON_PIN) == 0)
   {
@@ -383,9 +376,6 @@ void loop() {
   if (t1 == 0)
   {
     // Turn off display
-    Serial.println("Turn off display");
-    // display.clearDisplay();
-    // drawMyBitmap();
     display.clearDisplay();
     display.setTextSize(1);
     display.setCursor(random(0, 40), random(0,20));
