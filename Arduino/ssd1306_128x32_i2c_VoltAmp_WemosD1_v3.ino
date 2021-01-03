@@ -99,16 +99,12 @@ void setup_wifi() {
 
 
 void callback(char* topic, byte* payload, unsigned int length) {
-  Serial.print("Message arrived [");
-  Serial.print(topic);
-  Serial.print("] ");
-  for (int i = 0; i < length; i++) {
-    Serial.print((char)payload[i]);
-  }
-  Serial.println();
+  char buffer_payload[30];
 
+  strncpy(buffer_payload, (char *) payload, length);
+  buffer_payload[length] = '\0';
   // Switch Mode
-  mode = (int)payload;
+  mode = atoi(buffer_payload);
   if((mode < 0) || (mode >5))
     mode = 0;
 
