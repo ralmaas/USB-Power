@@ -1,5 +1,5 @@
 # USB-Power
-A small 10A USB Power-supply with monitoring and display
+A small 10A USB Power-supply with voltage and current monitoring
 
 I would like to monitor power consumption during for instance running a Raspberry Pi or check the load curve on recharging LiPo batteries.
 
